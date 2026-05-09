@@ -6,7 +6,7 @@ load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-PRIMARY_MODEL = "gemini-2.5-flash"
+PRIMARY_MODEL = "gemini-1.5-flash"
 FALLBACK_MODEL = "gemini-1.5-flash"
 
 OUTPUT_DIR = "output"
