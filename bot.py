@@ -18,6 +18,9 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+# إنشاء المجلدات تلقائياً
+os.makedirs("cache", exist_ok=True)
+os.makedirs("output", exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
@@ -61,11 +64,11 @@ async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             progress
         )
 
-        with open(result, "rb") as f:
+        with open(result, "rb") as file:
 
             await context.bot.send_document(
                 chat_id=update.effective_chat.id,
-                document=f,
+                document=file,
                 filename="research.pdf",
                 caption="✅ تم إنشاء البحث بنجاح"
             )
@@ -79,22 +82,29 @@ async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
 
-    os.makedirs("cache", exist_ok=True)
-    os.makedirs("output", exist_ok=True)
+    # إنشاء event loop يدوي
+    loop = asyncio.new_event_loop()
 
-    asyncio.run(init_db())
+    asyncio.set_event_loop(loop)
 
+    # تهيئة قاعدة البيانات
+    loop.run_until_complete(init_db())
+
+    # إنشاء التطبيق
     app = Application.builder().token(
         TELEGRAM_TOKEN
     ).build()
 
+    # الأوامر
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("generate", generate))
 
     print("BOT ONLINE")
 
+    # تشغيل البوت
     app.run_polling()
 
 
 if __name__ == "__main__":
+
     main()
