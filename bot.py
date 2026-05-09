@@ -69,8 +69,10 @@ async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def main():
-os.makedirs("cache", exist_ok=True)
-os.makedirs("output", exist_ok=True)
+    os.makedirs("cache", exist_ok=True)
+    os.makedirs("output", exist_ok=True)
+    
+    
     await init_db()
 
     app = Application.builder().token(
