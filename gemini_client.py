@@ -4,58 +4,77 @@ import google.generativeai as genai
 from config import (
     GEMINI_API_KEY,
     PRIMARY_MODEL,
-    FALLBACK_MODEL,
-    MAX_RETRIES,
-    RETRY_DELAY
+    FALLBACK_MODEL
 )
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-def build_model(name):
+PRIMARY = genai.GenerativeModel(PRIMARY_MODEL)
+FALLBACK = genai.GenerativeModel(FALLBACK_MODEL)
 
-    return genai.GenerativeModel(
-        model_name=name,
-        generation_config={
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "max_output_tokens": 8192
-        }
-    )
 
-primary = build_model(PRIMARY_MODEL)
-fallback = build_model(FALLBACK_MODEL)
+def is_bad_response(text):
 
-def generate(prompt):
+    bad = [
+        "429",
+        "quota",
+        "rate limit",
+        "exceeded",
+        "resource exhausted",
+        "api key expired",
+        "permission denied"
+    ]
 
-    for attempt in range(MAX_RETRIES):
+    text_lower = text.lower()
+
+    return any(x in text_lower for x in bad)
+
+
+def generate(prompt, retries=5):
+
+    for attempt in range(retries):
 
         try:
 
-            response = primary.generate_content(prompt)
+            response = PRIMARY.generate_content(prompt)
 
             if hasattr(response, "text"):
-                return response.text.strip()
+
+                text = response.text.strip()
+
+                if not is_bad_response(text):
+                    return text
 
         except Exception as e:
 
-            txt = str(e).lower()
+            err = str(e)
 
-            if "429" in txt or "quota" in txt:
+            print(f"PRIMARY ERROR: {err}")
 
-                try:
-                    response = fallback.generate_content(prompt)
+        # fallback model
+        try:
 
-                    if hasattr(response, "text"):
-                        return response.text.strip()
+            response = FALLBACK.generate_content(prompt)
 
-                except Exception:
-                    pass
+            if hasattr(response, "text"):
 
-                time.sleep(RETRY_DELAY)
+                text = response.text.strip()
 
-            else:
+                if not is_bad_response(text):
+                    return text
 
-                if attempt == MAX_RETRIES - 1:
-                    return f"ERROR: {e}"
+        except Exception as e:
 
-    return "فشل توليد المحتوى"
+            print(f"FALLBACK ERROR: {e}")
+
+        wait_time = (attempt + 1) * 15
+
+        print(f"WAITING {wait_time}s")
+
+        time.sleep(wait_time)
+
+    return """
+تعذر إنشاء هذا القسم بسبب تجاوز حدود Gemini API.
+
+يرجى إعادة المحاولة لاحقاً أو تغيير API KEY.
+"""
