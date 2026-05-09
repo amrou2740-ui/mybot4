@@ -1,5 +1,6 @@
 import logging
 import os
+import asyncio
 
 from telegram import Update
 from telegram.ext import (
@@ -19,6 +20,7 @@ logging.basicConfig(
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
@@ -27,12 +29,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/generate عنوان البحث"
     )
 
+
 async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not context.args:
+
         await update.message.reply_text(
             "اكتب عنوان البحث"
         )
+
         return
 
     topic = " ".join(context.args)
@@ -45,6 +50,7 @@ async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
             await status.edit_text(text)
+
         except Exception:
             pass
 
@@ -55,12 +61,14 @@ async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             progress
         )
 
-        await context.bot.send_document(
-            chat_id=update.effective_chat.id,
-            document=open(result, "rb"),
-            filename="research.pdf",
-            caption="✅ تم إنشاء البحث بنجاح"
-        )
+        with open(result, "rb") as f:
+
+            await context.bot.send_document(
+                chat_id=update.effective_chat.id,
+                document=f,
+                filename="research.pdf",
+                caption="✅ تم إنشاء البحث بنجاح"
+            )
 
     except Exception as e:
 
@@ -68,12 +76,13 @@ async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"❌ خطأ:\n{e}"
         )
 
-async def main():
+
+def main():
+
     os.makedirs("cache", exist_ok=True)
     os.makedirs("output", exist_ok=True)
-    
-    
-    await init_db()
+
+    asyncio.run(init_db())
 
     app = Application.builder().token(
         TELEGRAM_TOKEN
@@ -86,7 +95,6 @@ async def main():
 
     app.run_polling()
 
-if __name__ == "__main__":
 
-    import asyncio
-    asyncio.run(main())
+if __name__ == "__main__":
+    main()
